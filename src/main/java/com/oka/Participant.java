@@ -2,12 +2,16 @@ package com.oka;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class Participant implements IParticipant {
 
     private final String name;
     private final IChatRoom room;
     private final ChatWindow window;
+
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm a");
     Participant(String name, IChatRoom room, String roomName){
         this.name = name;
         this.room = room;
@@ -43,13 +47,20 @@ public class Participant implements IParticipant {
     }
 
     @Override
-    public void onNewMessage(String pctName, String message) throws RemoteException {
-        window.print(pctName+": "+message);
+    public void onMessage(long date, String name, String message) throws RemoteException {
+        if(name != null){
+            window.print("["+timeFormated(date)+"] "+name+": "+message);
+        }else {
+            window.print("~------------ "+timeFormated(date)+" "+message+"--------------~");
+        }
     }
-
     @Override
     public String getName() {
         return name;
     }
 
+
+    private String timeFormated(long date){
+        return dateFormat.format(new Date(date));
+    }
 }

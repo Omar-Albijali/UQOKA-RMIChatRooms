@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 
 public interface IParticipant extends Remote {
 
-    void onNewMessage(String pctName, String message) throws RemoteException;
+    void onMessage(long date, String name, String message) throws RemoteException;
 
     String getName() throws RemoteException;
 
