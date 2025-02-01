@@ -1,27 +1,36 @@
 package com.oka;
 
+import org.apache.commons.cli.*;
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.time.Clock;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Scanner;
 
 public class Client {
 
-    Registry registry;
-    Server.Api api;
-    Participant participant;
-
-    String name;
-
+    private Registry registry;
+    private Server.Api api;
+    private Participant participant;
+    private final String name;
     public Client(String name) {
         this.name = name;
     }
 
-    public void connectTo(String host, int port) throws RemoteException, NotBoundException {
-        registry = LocateRegistry.getRegistry(host, port);
-        api = (Server.Api) registry.lookup("api");
+    public void connectTo(String host, int port) {
+        try {
+            registry = LocateRegistry.getRegistry(host, port);
+            api = (Server.Api) registry.lookup("api");
+        } catch (RemoteException e) {
+            throw new RuntimeException("Error Server Unreachable.");
+        } catch (NotBoundException e) {
+            throw new RuntimeException("Error Api Not Found.");
+        }
     }
 
     private void listChatRooms(){
@@ -92,8 +101,7 @@ public class Client {
                         + "\tclose               #close this client\n"
         );
         Scanner scanner = new Scanner(System.in);
-        boolean running = true;
-        while (running){
+        while (true){
             System.out.print("---> ");
             String fullCommand = scanner.nextLine();
             String[] split = fullCommand.split(" ", 2);
@@ -104,27 +112,59 @@ public class Client {
                 case "leave" : leaveChatRoom(); break;
                 case "who" : listMembers(split[1]); break;
                 case "send" : sendToChatRoom(split[1]); break;
-                case "close" : leaveChatRoom();running = false;break;
+                case "close" : leaveChatRoom();System.exit(0);break;
                 default: System.out.println("Unknown command");
             }
         }
     }
 
-    public static void main(String[] args) throws RemoteException, NotBoundException {
+    public static void main(String[] args) {
 
-        Scanner scanner = new Scanner(System.in);
-        String host = "127.0.0.1";
+        CommandLineParser parser = new DefaultParser();
+        Options options = new Options();
 
-        if(args.length > 0 && args[0].equals("lan")){
-            System.out.print("Enter Server ip: ");
-            host = scanner.nextLine();
+        options.addOption("h", "help", false, "Show help");
+        options.addOption("i", "ip", true, "Server ip default is 127.0.0.1");
+        options.addOption("p", "port", true, "Server port default is 1099");
+        options.addOption("n", "name", true, "Client name");
+
+        String ip = Server.DEFAULT_IP;
+        int port = Server.DEFAULT_PORT;
+        String name = "Client"+ LocalTime.now().getSecond();
+
+        try {
+            CommandLine cmd = parser.parse(options, args);
+
+            if (cmd.hasOption("h")) {
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("java -jar Client.jar [options]", options);
+                return;
+            }
+
+            if (cmd.hasOption("i")) {
+                ip = cmd.getOptionValue("i");
+            }
+
+            if (cmd.hasOption("p")) {
+                String p = cmd.getOptionValue("p");
+                try {
+                    port= Integer.parseInt(p);
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid port.");
+                }
+            }
+
+            if (cmd.hasOption("n")) {
+                name = cmd.getOptionValue("n");
+            }
+
+        } catch (ParseException e) {
+            System.out.println("Error parsing command-line arguments.");
         }
 
-        System.out.print("Enter name : ");
-        String name = scanner.nextLine();
 
         Client client = new Client(name);
-        client.connectTo(host, Server.PORT);
+        client.connectTo(ip, port);
         client.startCommander();
 
     }
