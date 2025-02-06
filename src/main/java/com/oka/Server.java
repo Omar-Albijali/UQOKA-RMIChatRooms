@@ -8,7 +8,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -29,7 +28,6 @@ public class Server {
             .map(ChatRoom::getName)
             .collect(Collectors.toList());
 
-    private static final Scanner scanner = new Scanner(System.in);
 
     private void startOn(String ip, int port) {
         try {
@@ -58,6 +56,7 @@ public class Server {
 
     private static void waitForEnterToClose(){
         System.out.print("\nPress enter to end the server...");
+        Scanner scanner = new Scanner(System.in);
         scanner.nextLine();
         System.exit(0);
     }
